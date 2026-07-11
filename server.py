@@ -66,7 +66,18 @@ async def debug_cli() -> dict:
     out = {}
     out["PATH"] = os.environ.get("PATH", "")
     out["HOME"] = os.environ.get("HOME", "")
-    for cmd in (["which", "claude"], ["find", "/", "-maxdepth", "4", "-iname", "*claude*", "-not", "-path", "/proc/*"]):
+    out["CLAUDE_CREDENTIALS_B64_present"] = bool(os.environ.get("CLAUDE_CREDENTIALS_B64"))
+    out["CLAUDE_CREDENTIALS_B64_len"] = len(os.environ.get("CLAUDE_CREDENTIALS_B64", ""))
+    for cmd in (
+        ["which", "claude"],
+        ["which", "node"],
+        ["which", "npm"],
+        ["node", "--version"],
+        ["npm", "--version"],
+        ["find", "/", "-maxdepth", "4", "-iname", "*claude*", "-not", "-path", "/proc/*"],
+        ["cat", "/proc/1/cmdline"],
+        ["ls", "-la", "/agent"],
+    ):
         try:
             r = subprocess.run(cmd, capture_output=True, text=True, timeout=15)
             out[" ".join(cmd)] = {"rc": r.returncode, "stdout": r.stdout[:2000], "stderr": r.stderr[:500]}
