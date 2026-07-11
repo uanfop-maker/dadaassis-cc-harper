@@ -59,6 +59,23 @@ async def health() -> dict:
     }
 
 
+@app.get("/debug/cli")
+async def debug_cli() -> dict:
+    """臨時診斷端點：確認 claude CLI 在這個映像裡的實際位置，問題排除後會移除。"""
+    import subprocess
+    out = {}
+    out["PATH"] = os.environ.get("PATH", "")
+    out["HOME"] = os.environ.get("HOME", "")
+    for cmd in (["which", "claude"], ["find", "/", "-maxdepth", "4", "-iname", "*claude*", "-not", "-path", "/proc/*"]):
+        try:
+            r = subprocess.run(cmd, capture_output=True, text=True, timeout=15)
+            out[" ".join(cmd)] = {"rc": r.returncode, "stdout": r.stdout[:2000], "stderr": r.stderr[:500]}
+        except Exception as exc:
+            out[" ".join(cmd)] = str(exc)
+    out["credentials_file_exists"] = os.path.exists("/root/.claude/.credentials.json")
+    return out
+
+
 @app.on_event("startup")
 async def _startup_cli_healthcheck() -> None:
     if LLM_BACKEND != "claude_cli":
